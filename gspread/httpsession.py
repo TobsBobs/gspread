@@ -8,6 +8,7 @@ This module contains a class for working with http sessions.
 
 """
 
+import requests
 try:
     import httplib as client
     from urlparse import urlparse
@@ -23,41 +24,32 @@ except NameError:
     basestring = unicode = str
 
 
-class HTTPError(Exception):
-    def __init__(self, response):
-        self.code = response.status
-        self.response = response
-
-    def read(self):
-        return self.response.read()
+from .exceptions import HTTPError
 
 
 class HTTPSession(object):
+
     """Handles HTTP activity while keeping headers persisting across requests.
 
        :param headers: A dict with initial headers.
     """
+
     def __init__(self, headers=None):
         self.headers = headers or {}
-        self.connections = {}
 
     def request(self, method, url, data=None, headers=None):
+        if data and isinstance(data, bytes):
+            data = data.decode()
+
         if data and not isinstance(data, basestring):
             data = urlencode(data)
 
         if data is not None:
-            data = data.encode()
+            data = data.encode('utf8')
 
         # If we have data and Content-Type is not set, set it...
         if data and not headers.get('Content-Type', None):
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
-        # If connection for this scheme+location is not established, establish it.
-        uri = urlparse(url)
-        if not self.connections.get(uri.scheme+uri.netloc):
-            if uri.scheme == 'https':
-                self.connections[uri.scheme+uri.netloc] = client.HTTPSConnection(uri.netloc)
-            else:
-                self.connections[uri.scheme+uri.netloc] = client.HTTPConnection(uri.netloc)
 
         request_headers = self.headers.copy()
 
@@ -68,11 +60,15 @@ class HTTPSession(object):
                 else:
                     request_headers[k] = v
 
-        self.connections[uri.scheme+uri.netloc].request(method, url, data, headers=request_headers)
-        response = self.connections[uri.scheme+uri.netloc].getresponse()
+        try:
+            func = getattr(requests, method.lower())
+        except AttributeError:
+            raise Exception("HTTP method '{}' is not supported".format(method))
+        response = func(url, data=data, headers=request_headers)
 
-        if response.status > 399:
-            raise HTTPError(response)
+        if response.status_code > 399:
+            raise HTTPError(response.status_code, "{}: {}".format(
+                response.status_code, response.content))
         return response
 
     def get(self, url, **kwargs):

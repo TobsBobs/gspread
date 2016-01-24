@@ -1,5 +1,5 @@
 # Google Spreadsheets Python API
-[![Downloads](https://pypip.in/d/gspread/badge.png)](https://crate.io/packages/gspread)
+[![Downloads](https://img.shields.io/pypi/dm/gspread.svg)](https://pypi.python.org/pypi/gspread)
 
 Manage your spreadsheets with _gspread_ in Python.
 
@@ -10,15 +10,16 @@ Features:
 * Independent of Google Data Python client library.
 * Python 3 support.
 
-![logo](https://raw.github.com/burnash/gspread/master/gspread.png "")
-
 ## Basic Usage
+
+1. [Obtain OAuth2 credentials from Google Developers Console](http://gspread.readthedocs.org/en/latest/oauth2.html)
+
+2. Start using gspread:
 
 ```python
 import gspread
 
-# Login with your Google account
-gc = gspread.login('thedude@abid.es', 'password')
+gc = gspread.authorize(credentials)
 
 # Open a worksheet from spreadsheet with one shot
 wks = gc.open("Where is the money Lebowski?").sheet1
@@ -28,36 +29,6 @@ wks.update_acell('B2', "it's down there somewhere, let me take another look.")
 # Fetch a cell range
 cell_list = wks.range('A1:B7')
 ```
-
-## Alternate Authorization Using OAuth2
-
-```python
-import gspread
-
-# Login with your Google account
-gc = gspread.authorize(OAuth2Credentials)
-
-# Open a worksheet from spreadsheet with one shot
-wks = gc.open("Where is the money Lebowski?").sheet1
-
-```
-
-Note: You probably need to have oauth2client and httplib2 installed to create OAuth2 Credential objects. See ["Using OAuth2 for Authorization"](http://burnash.github.com/gspread/oauth2.html) for more information.
-
-### Two Factor Authorization
-
-In case your Google Account protected with [Two Factor Authorization](http://support.google.com/accounts/bin/answer.py?hl=en&answer=180744), 
-you have to create [an application-specific password](https://accounts.google.com/b/0/IssuedAuthSubTokens?hide_authsub=1) and use your email
-to login as usual.
-
-Otherwise you will get an `AuthenticationError: Unable to authenticate. 403 code` when trying to login.
-
-### Authorization Problems
-
-If you're not using Two Factor Authorization and you get `gspread.exceptions.AuthenticationError: Unable to authenticate. 403 code` while trying to logon with gspread, do this:
-
-1. In your webbrowser logon to gmail/google with the account you're using in gspread. 
-2. Visit the URLs https://www.google.com/settings/security/lesssecureapps and https://accounts.google.com/DisplayUnlockCaptcha and follow the instructions on those pages.
 
 ## More Examples
 
@@ -210,7 +181,7 @@ easy_install gspread
 
 ## Documentation
 
-[API Reference](http://burnash.github.com/gspread/)
+[API Reference](http://gspread.readthedocs.org/)
 
 ## Testing
 
@@ -229,15 +200,21 @@ easy_install gspread
     nosetests
     ```
 
-## Suggestions & Code Contribution
+## [Contributors](https://github.com/burnash/gspread/graphs/contributors)
 
-- [Javier Candeira](https://github.com/candeira)
-- [Peter "Mash" Morgan](https://github.com/ac001)
-- [ptlu](https://github.com/ptlu)
-- [aginor](https://github.com/aginor)
+## How to Contribute
 
-[All contributors](https://github.com/burnash/gspread/graphs/contributors)
+### Ask Questions
 
-## Feedback
+The best way to get an answer to a question is to ask on [Stack Overflow with a gspread tag](http://stackoverflow.com/questions/tagged/gspread?sort=votes&pageSize=50).
 
-Please report bugs and suggest features via [GitHub Issues](https://github.com/burnash/gspread/issues).
+### Report Issues
+
+Please report bugs and suggest features via the [GitHub Issues](https://github.com/burnash/gspread/issues).
+
+Before opening an issue, search the tracker for possible duplicates. If you find a duplicate, please add a comment saying that you encountered the problem as well.
+
+### Contribute code
+
+* Check the [GitHub Issues](https://github.com/burnash/gspread/issues) for open issues that need attention.
+* Follow the [Contributing to Open Source](https://guides.github.com/activities/contributing-to-open-source/) Guide.

@@ -1,6 +1,75 @@
 Release History
 ===============
 
+0.3.0 (2015-12-15)
+------------------
+
+* Use Python requests instead of the native HTTPConnection object
+
+* Optimized row_values and col_values
+
+* Optimized row_values and col_values
+  Removed the _fetch_cells call for each method. This eliminates the
+  adverse effect on runtime for large worksheets.
+
+  Fixes #285, #190, #179, and #113
+
+* Optimized row_values and col_values
+  Removed the _fetch_cells call for each method. This eliminates the
+  adverse effect on runtime for large worksheets.
+
+  Fixes #285, #190, #179, and #113
+
+* Altered insert_row semantics to utilize range
+  This avoids issuing one API request per cell to retrieve the Cell
+  objects after the insertion row. This provides a significant speed-up
+  for insertions at the beginning of large sheets.
+
+* Added mock tests for Travis (MockSpreadsheetTest)
+
+* Fixed XML header issue with Python 3
+
+* Fixed Worksheet.export function and associated test
+
+* Added spreadsheet feed helper
+
+* Add CellNotFound to module exports
+  Fixes #88
+
+* Fixed utf8 encoding error caused by duplicate XML declarations
+* Fixed AttributeError when URLError caught by HTTPError catch block
+  Fixes #257
+
+* Added __iter__ method to Spreadsheet class
+
+* Fixed export test
+* Switched tests to oauth
+
+0.2.5 (2015-04-22)
+------------------
+
+* Deprecation warning for ClientLogin #210
+* Redirect github pages to ReadTheDocs
+* Bugfixes
+
+0.2.4 (2015-04-17)
+------------------
+
+* Output error response #219 #170 #194.
+* Added instructions on how to get oAuth credentials to docs.
+
+0.2.3 (2015-03-11)
+------------------
+
+* Fixed issue with `Spreadsheet.del_worksheet`.
+* Automatically refresh OAuth2 token when it has expired.
+* Added an `insert_row` method to `Worksheet`.
+* Moved docs to Read The Docs.
+* Added the `numeric_value` attribute to `Cell`.
+* Added title property to `Spreadsheet`.
+* Support for exporting worksheets.
+* Added row selection for keys in `Worksheet.get_all_records`.
+
 0.2.2 (2014-08-26)
 ------------------
 

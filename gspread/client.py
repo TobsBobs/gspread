@@ -9,6 +9,7 @@ Google Data API.
 
 """
 import re
+import warnings
 
 from xml.etree import ElementTree
 
@@ -59,8 +60,23 @@ class Client(object):
                 return line[5:]
         return None
 
-    def _add_xml_header(self, data):
-        return "<?xml version='1.0' encoding='UTF-8'?>%s" % data.decode()
+    def _deprecation_warning(self):
+        warnings.warn("""
+            ClientLogin is deprecated:
+            https://developers.google.com/identity/protocols/AuthForInstalledApps?csw=1
+
+            Authorization with email and password will stop working on April 20, 2015.
+
+            Please use oAuth2 authorization instead:
+            http://gspread.readthedocs.org/en/latest/oauth2.html
+
+        """, Warning)
+
+    def _ensure_xml_header(self, data):
+        if data.startswith(b'<?xml'):
+            return data
+        else:
+            return b'<?xml version="1.0" encoding="utf8"?>' + data
 
     def login(self):
         """Authorize client using ClientLogin protocol.
@@ -87,6 +103,8 @@ class Client(object):
             self.session.add_header('Authorization', "Bearer " + self.auth.access_token)
 
         else:
+            self._deprecation_warning()
+
             data = {'Email': self.auth[0],
                     'Passwd': self.auth[1],
                     'accountType': 'HOSTED_OR_GOOGLE',
@@ -97,23 +115,16 @@ class Client(object):
 
             try:
                 r = self.session.post(url, data)
-                content = r.read().decode()
-                token = self._get_auth_token(content)
+                token = self._get_auth_token(r.content)
                 auth_header = "GoogleLogin auth=%s" % token
                 self.session.add_header('Authorization', auth_header)
 
             except HTTPError as ex:
-                if ex.code == 403:
-                    content = ex.read().decode()
-                    if content.strip() == 'Error=BadAuthentication':
-                        raise AuthenticationError("Incorrect username or password")
-                    else:
-                        raise AuthenticationError(
-                            "Unable to authenticate. %s code" % ex.code)
-
+                if ex.message.strip() == '403: Error=BadAuthentication':
+                    raise AuthenticationError("Incorrect username or password")
                 else:
                     raise AuthenticationError(
-                        "Unable to authenticate. %s code" % ex.code)
+                        "Unable to authenticate. %s" % ex.message)
 
     def open(self, title):
         """Opens a spreadsheet, returning a :class:`~gspread.Spreadsheet` instance.
@@ -218,7 +229,7 @@ class Client(object):
                             visibility=visibility, projection=projection)
 
         r = self.session.get(url)
-        return ElementTree.fromstring(r.read())
+        return ElementTree.fromstring(r.content)
 
     def get_worksheets_feed(self, spreadsheet,
                             visibility='private', projection='full'):
@@ -226,7 +237,7 @@ class Client(object):
                             visibility=visibility, projection=projection)
 
         r = self.session.get(url)
-        return ElementTree.fromstring(r.read())
+        return ElementTree.fromstring(r.content)
 
     def get_cells_feed(self, worksheet,
                        visibility='private', projection='full', params=None):
@@ -239,20 +250,16 @@ class Client(object):
             url = '%s?%s' % (url, params)
 
         r = self.session.get(url)
-        return ElementTree.fromstring(r.read())
+        return ElementTree.fromstring(r.content)
 
     def get_feed(self, url):
         r = self.session.get(url)
-        return ElementTree.fromstring(r.read())
+        return ElementTree.fromstring(r.content)
 
     def del_worksheet(self, worksheet):
         url = construct_url(
             'worksheet', worksheet, 'private', 'full', worksheet_version=worksheet.version)
         r = self.session.delete(url)
-        # Even though there is nothing interesting in the response body
-        # we have to read it or the next request from this session will get a
-        # httplib.ResponseNotReady error.
-        r.read()
 
     def get_cells_cell_id_feed(self, worksheet, cell_id,
                                visibility='private', projection='full'):
@@ -260,51 +267,49 @@ class Client(object):
                             visibility=visibility, projection=projection)
 
         r = self.session.get(url)
-        return ElementTree.fromstring(r.read())
+        return ElementTree.fromstring(r.content)
 
     def put_feed(self, url, data):
         headers = {'Content-Type': 'application/atom+xml',
                    'If-Match': '*'}
-        data = self._add_xml_header(data)
+        data = self._ensure_xml_header(data)
 
         try:
             r = self.session.put(url, data, headers=headers)
         except HTTPError as ex:
-            if ex.code == 403:
-                message = ex.read().decode()
-                raise UpdateCellError(message)
+            if getattr(ex, 'code', None) == 403:
+                raise UpdateCellError(ex.message)
             else:
-                raise ex
+                raise
 
-        return ElementTree.fromstring(r.read())
+        return ElementTree.fromstring(r.content)
 
     def post_feed(self, url, data):
         headers = {'Content-Type': 'application/atom+xml'}
-        data = self._add_xml_header(data)
+        data = self._ensure_xml_header(data)
 
         try:
             r = self.session.post(url, data, headers=headers)
         except HTTPError as ex:
-            message = ex.read().decode()
-            raise RequestError(message)
+            raise RequestError(ex.message)
 
-        return ElementTree.fromstring(r.read())
+        return ElementTree.fromstring(r.content)
 
     def post_cells(self, worksheet, data):
         headers = {'Content-Type': 'application/atom+xml',
                    'If-Match': '*'}
-        data = self._add_xml_header(data)
+        data = self._ensure_xml_header(data)
         url = construct_url('cells_batch', worksheet)
         r = self.session.post(url, data, headers=headers)
 
-        return ElementTree.fromstring(r.read())
+        return ElementTree.fromstring(r.content)
 
 
 def login(email, password):
     """Login to Google API using `email` and `password`.
 
     This is a shortcut function which instantiates :class:`Client`
-    and performes login right away.
+    and performs login right away.
 
     :returns: :class:`Client` instance.
 
@@ -317,7 +322,7 @@ def authorize(credentials):
     """Login to Google API using OAuth2 credentials.
 
     This is a shortcut function which instantiates :class:`Client`
-    and performes login right away.
+    and performs login right away.
 
     :returns: :class:`Client` instance.
 
@@ -325,4 +330,3 @@ def authorize(credentials):
     client = Client(auth=credentials)
     client.login()
     return client
-
